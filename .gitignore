@@ -1,0 +1,46 @@
+# Node.js & Next.js
+node_modules/
+.next/
+out/
+dist/
+.npm/
+.npm-cache/
+yarn.lock
+package-lock.json
+pnpm-lock.yaml
+
+# Logs & Debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+debug.log*
+
+# Build Artifacts
+*.log
+*.tsbuildinfo
+*.swp
+*.swo
+
+# Environment Files
+.env
+.env.local
+.env.development
+.env.production
+.env.test
+.env.*.local
+
+# Editor & OS Files
+.vscode/
+.idea/
+*.DS_Store
+*.log
+Thumbs.db
+
+# Misc
+coverage/
+*.bak
+*.orig
+
+# Git-specific
+.git/

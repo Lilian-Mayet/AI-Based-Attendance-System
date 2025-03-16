@@ -1,0 +1,133 @@
+from deepface import DeepFace
+import os
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import time
+from mpl_toolkits.mplot3d import Axes3D
+from typing import Dict, List
+
+# Define all available models
+MODELS = [
+    "VGG-Face", 
+    "Facenet", 
+    "Facenet512", 
+    "OpenFace", 
+    "DeepFace", 
+    "DeepID", 
+    "ArcFace", 
+    "Dlib", 
+    "SFace",
+    "GhostFaceNet"
+]
+
+# List of non-Matteo images for misidentification check
+NON_MATTEO_IMAGES = [
+    "imgTest/victor.jpg", "imgTest/romain.jpg", "imgTest/mathilde.jpg",
+    "imgTest/lilian.jpg", "imgTest/leo.jpg", "imgTest/dimitar.jpg",
+    "imgTest/maxence.jpg", "imgTest/remi.jpg"
+]
+
+def get_embedding(image_path: str, model_name: str) -> List[np.ndarray]:
+    """Get face embedding for a single image."""
+    try:
+        start_time = time.time()
+        embedding_objs = DeepFace.represent(
+            img_path=image_path,
+            model_name=model_name,
+            detector_backend="retinaface",
+            enforce_detection=True,
+            align=True
+        )
+        elapsed_time = time.time() - start_time
+        
+        if not embedding_objs:
+            raise ValueError("No face detected")
+            
+        return [np.array(obj["embedding"]) for obj in embedding_objs], elapsed_time
+        
+    except Exception as e:
+        print(f"Error getting embedding for {image_path} with model {model_name}: {str(e)}")
+        return [], 0.0
+
+def calculate_similarity(emb1: np.ndarray, emb2: np.ndarray) -> float:
+    """Calculate cosine similarity between two embeddings."""
+    return np.dot(emb1, emb2) / (np.linalg.norm(emb1) * np.linalg.norm(emb2))
+
+def evaluate_models() -> Dict[str, Dict[str, List]]:
+    """Evaluate all models and return their similarity scores and computation times."""
+    original_path = "imgTest/matteoOG.jpg"
+    results = {model: {"scores": [], "times": [], "embedding_lengths": [], "misidentification_scores": []} for model in MODELS}
+    
+    for model in MODELS:
+        print(f"\n=== Evaluating {model} ===")
+        try:
+            original_embeddings, time_taken = get_embedding(original_path, model)
+            if not original_embeddings:
+                print(f"Skipping {model} - couldn't get original embedding")
+                continue
+            
+            original_embedding = original_embeddings[0] 
+            results[model]["embedding_lengths"].append(len(original_embedding))
+            
+            for i in range(1, 12):  
+                test_path = f"imgTest/matteo{i}.jpg"
+                if not os.path.exists(test_path):
+                    print(f"Warning: {test_path} not found")
+                    results[model]["scores"].append(0.0)
+                    results[model]["times"].append(0.0)
+                    continue
+                
+                test_embeddings, time_taken = get_embedding(test_path, model)
+                results[model]["times"].append(time_taken)
+                
+                if not test_embeddings:
+                    print(f"No faces found in {test_path}")
+                    results[model]["scores"].append(0.0)
+                    continue
+                
+                similarities = [calculate_similarity(original_embedding, test_emb) for test_emb in test_embeddings]
+                max_similarity = max(similarities)
+                results[model]["scores"].append(max_similarity)
+                print(f"Image {i}: Similarity = {max_similarity:.3f}, Time = {time_taken:.3f}s")
+            
+            for non_matteo in NON_MATTEO_IMAGES:
+                test_embeddings, _ = get_embedding(non_matteo, model)
+                if not test_embeddings:
+                    results[model]["misidentification_scores"].append(0.0)
+                    continue
+                similarities = [calculate_similarity(original_embedding, test_emb) for test_emb in test_embeddings]
+                max_similarity = max(similarities)
+                results[model]["misidentification_scores"].append(max_similarity)
+                print(f"Non-Matteo Image {non_matteo}: Similarity = {max_similarity:.3f}")
+                
+        except Exception as e:
+            print(f"Error processing model {model}: {str(e)}")
+            results[model]["scores"] = [0.0] * 11
+            results[model]["times"] = [0.0] * 11
+            results[model]["misidentification_scores"] = [0.0] * len(NON_MATTEO_IMAGES)
+    
+    return results
+
+def plot_additional_results(results: Dict[str, Dict[str, List]]):
+    """Plot misidentification rates."""
+    plt.figure(figsize=(15, 10))
+    x = range(len(NON_MATTEO_IMAGES))
+    for model, data in results.items():
+        plt.plot(x, data["misidentification_scores"], marker='x', label=model, alpha=0.7)
+    plt.xlabel('Non-Matteo Image')
+    plt.ylabel('Similarity Score')
+    plt.title('Misidentification Risk per Model')
+    plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+    plt.grid(True, alpha=0.3)
+    plt.xticks(x, [img.split('/')[-1] for img in NON_MATTEO_IMAGES], rotation=45)
+    plt.tight_layout()
+    plt.savefig('misidentification_risk.png')
+    plt.close()
+
+if __name__ == "__main__":
+    print("Starting model evaluation...")
+    results = evaluate_models()
+    print("\nGenerating plots and saving results...")
+    plot_additional_results(results)
+    print("\nEvaluation complete! Results saved to 'misidentification_risk.png'")

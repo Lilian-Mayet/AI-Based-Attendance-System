@@ -353,7 +353,20 @@ def recognize_faces_deepface(
                         results[best_match_name] = face_data
                         print(f"✅ Matched with {best_match_name} (confidence: {confidence:.2%})")
                 else:
-                    print(f"❌ Best match below threshold (confidence: {confidence:.2%})")
+                    # Assign a placeholder name for strangers
+                    stranger_id = f"stranger_{len([k for k in results if k.startswith('stranger_')]) + 1}"
+                    face_data = {
+                        'bounding_box': (
+                            facial_area['y'],
+                            facial_area['x'] + facial_area['w'],
+                            facial_area['y'] + facial_area['h'],
+                            facial_area['x']
+                        ),
+                        'name': stranger_id,
+                        'confidence': float(confidence)
+                    }
+                    results[stranger_id] = face_data
+                    print(f"❓ Stranger detected: {stranger_id} (confidence: {confidence:.2%})")
                     
             except Exception as e:
                 print(f"Error processing face {i+1}: {str(e)}")

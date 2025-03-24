@@ -143,18 +143,36 @@ export default function FaceRecognitionV2() {
           })}
         </ul>
         <h2 className="text-lg font-semibold mt-4 mb-2">Unexpected Students</h2>
+          <ul>
+            {unexpectedStudents
+              .filter((face) => !face.name.startsWith("stranger_"))
+              .map((face, index) => (
+                <li
+                  key={index}
+                  className="p-2 mb-2 bg-yellow-500 rounded-md text-white cursor-pointer"
+                  onClick={() => handleStudentClick(face)}
+                >
+                  {face.name || "Unknown Student"} ({(face.confidence * 100).toFixed(2)}%)
+                </li>
+            ))}
+          </ul>
+
+        <h2 className="text-lg font-semibold mt-4 mb-2">Unknown Strangers</h2>
         <ul>
-          {unexpectedStudents.map((face, index) => (
-            <li
-              key={index}
-              className="p-2 mb-2 bg-yellow-500 rounded-md text-white cursor-pointer"
-              onClick={() => handleStudentClick(face)}
-            >
-              {face.name || "Unknown Student"} ({(face.confidence * 100).toFixed(2)}%)
-            </li>
+          {faces
+            .filter(face => face.name.startsWith("stranger_"))
+            .map((face, index) => (
+              <li
+                key={index}
+                className="p-2 mb-2 bg-gray-600 rounded-md text-white cursor-pointer"
+                onClick={() => handleStudentClick(face)}
+              >
+                {face.name.replace("_", " ")}
+              </li>
           ))}
         </ul>
-        <Button onClick={() => setSelectedFace(null)} className="w-full bg-red-500 text-white py-2 px-4 rounded-lg mt-4">
+
+        <Button onClick={() => setSelectedFace(null)} className="w-full bg-blue-500 text-white py-2 px-4 rounded-lg mt-4">
           Clear Boxes
         </Button>
       </div>

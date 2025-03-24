@@ -123,17 +123,18 @@ export default function FaceRecognitionV2() {
   };
 
   return (
-    <div className="flex gap-8">
-      <div className="w-1/4 p-4 bg-gray-100 rounded-lg shadow-md">
-        <h2 className="text-lg font-semibold mb-4">Expected Students</h2>
+    <div className="flex gap-8 p-6 bg-gray-50 min-h-screen">
+      {/* Sidebar */}
+      <div className="w-1/4 p-6 bg-white rounded-xl shadow-lg border border-gray-200">
+        <h2 className="text-xl font-bold mb-4 text-gray-800">Expected Students</h2>
         <ul>
           {allowedStudents.map((student) => {
             const face = faces.find((f) => f.name === student);
             return (
               <li
                 key={student}
-                className={`p-2 mb-2 rounded-md text-white cursor-pointer ${
-                  face ? "bg-green-500" : "bg-red-500"
+                className={`p-2 mb-2 rounded-md text-white cursor-pointer transition-all ${
+                  face ? "bg-green-500 hover:bg-green-600" : "bg-red-500 hover:bg-red-600"
                 }`}
                 onClick={() => face && handleStudentClick(face)}
               >
@@ -142,67 +143,83 @@ export default function FaceRecognitionV2() {
             );
           })}
         </ul>
-        <h2 className="text-lg font-semibold mt-4 mb-2">Unexpected Students</h2>
-          <ul>
-            {unexpectedStudents
-              .filter((face) => !face.name.startsWith("stranger_"))
-              .map((face, index) => (
-                <li
-                  key={index}
-                  className="p-2 mb-2 bg-yellow-500 rounded-md text-white cursor-pointer"
-                  onClick={() => handleStudentClick(face)}
-                >
-                  {face.name || "Unknown Student"} ({(face.confidence * 100).toFixed(2)}%)
-                </li>
-            ))}
-          </ul>
-
-        <h2 className="text-lg font-semibold mt-4 mb-2">Unknown Strangers</h2>
+  
+        <h2 className="text-xl font-bold mt-6 mb-2 text-gray-800">Unexpected Students</h2>
+        <ul>
+          {unexpectedStudents
+            .filter((face) => !face.name.startsWith("stranger_"))
+            .map((face, index) => (
+              <li
+                key={index}
+                className="p-2 mb-2 bg-yellow-500 hover:bg-yellow-600 rounded-md text-white cursor-pointer transition-all"
+                onClick={() => handleStudentClick(face)}
+              >
+                {face.name || "Unknown Student"} ({(face.confidence * 100).toFixed(2)}%)
+              </li>
+          ))}
+        </ul>
+  
+        <h2 className="text-xl font-bold mt-6 mb-2 text-gray-800">Unknown Strangers</h2>
         <ul>
           {faces
             .filter(face => face.name.startsWith("stranger_"))
             .map((face, index) => (
               <li
                 key={index}
-                className="p-2 mb-2 bg-gray-600 rounded-md text-white cursor-pointer"
+                className="p-2 mb-2 bg-gray-600 hover:bg-gray-700 rounded-md text-white cursor-pointer transition-all"
                 onClick={() => handleStudentClick(face)}
               >
-                {face.name.replace("_", " ")}
+                👤 {face.name.replace("_", " ")}
               </li>
           ))}
         </ul>
-
-        <Button onClick={() => setSelectedFace(null)} className="w-full bg-blue-500 text-white py-2 px-4 rounded-lg mt-4">
+  
+        <Button onClick={() => setSelectedFace(null)} className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg mt-6">
           Clear Boxes
         </Button>
       </div>
-      <Card className="w-3/4 overflow-hidden relative">
-        <CardHeader className="bg-gradient-to-r from-purple-500 to-pink-500 text-white">
-          <CardTitle className="text-2xl font-bold">Face Recognition</CardTitle>
+  
+      {/* Main Card */}
+      <Card className="w-3/4 overflow-hidden relative shadow-xl border border-gray-200">
+        <CardHeader className="bg-gradient-to-r from-indigo-500 to-pink-500 text-white">
+          <CardTitle className="text-3xl font-bold tracking-tight">Face Recognition</CardTitle>
         </CardHeader>
         <input type="file" accept="image/*" ref={fileInputRef} onChange={handleImageUpload} className="hidden" />
-      <Button
-        onClick={() => fileInputRef.current?.click()}
-        className="bg-blue-500 text-white py-2 px-6 rounded-lg flex items-center gap-2 shadow-md hover:bg-blue-600 transition"
-      >
-        <Upload className="w-5 h-5" /> Upload a Photo
-      </Button>
+        <div className="flex justify-center px-6 mt-4">
+          <Button
+            onClick={() => fileInputRef.current?.click()}
+            className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-6 rounded-lg flex items-center gap-2 shadow-md transition"
+          >
+            <Upload className="w-5 h-5" /> Upload Classroom picture
+          </Button>
+        </div>
         <CardContent className="p-6 relative">
           {image && (
-            <div className="relative mt-4 border border-gray-300">
+            <div className="relative mt-4 border border-gray-300 rounded-lg overflow-hidden shadow-md">
               <Image ref={imageRef} src={image} alt="Uploaded" width={500} height={500} className="object-contain" />
               {selectedFace && (
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  className="absolute border-2 border-red-500"
+                  className="absolute border-4 border-red-500"
                   style={getScaledBoundingBox(selectedFace)}
                 />
               )}
+            </div>
+          )}
+          {isLoading && (
+            <div className="mt-4 flex items-center justify-center text-gray-600">
+              <Loader2 className="animate-spin mr-2" /> Processing image...
+            </div>
+          )}
+          {error && (
+            <div className="mt-4 text-red-600 font-semibold">
+              ⚠️ {error}
             </div>
           )}
         </CardContent>
       </Card>
     </div>
   );
+  
 }

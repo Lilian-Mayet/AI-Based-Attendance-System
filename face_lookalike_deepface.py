@@ -3,7 +3,12 @@ import os
 import pandas as pd
 import numpy as np
 import cv2
+import psycopg2
 from typing import Dict, Any, Tuple, List
+import logging
+from dotenv import load_dotenv
+load_dotenv()
+import json
 models = [
   "VGG-Face", 
   "Facenet", 
@@ -17,6 +22,8 @@ models = [
   "GhostFaceNet"
 ]
 MODEL = "Facenet512"
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 def add_known_faces():
     add_face_to_deepface_db("imgTest/victor.jpg", "Victor")
@@ -35,6 +42,19 @@ def add_known_faces():
 
     add_face_to_deepface_db("imgTest/remi.jpg", "Rémi")
 
+def get_db_connection():
+    try:
+        conn = psycopg2.connect(
+            host=os.getenv("DB_HOST"),
+            user=os.getenv("DB_USER"),
+            password=os.getenv("DB_PASSWORD"),
+            dbname=os.getenv("DB_NAME"),
+            port=os.getenv("DB_PORT")
+        )
+        return conn
+    except Exception as e:
+        logger.error(f"Database connection error: {str(e)}")
+        raise
 
 def get_face_embedding(
     image_path: str,
@@ -126,6 +146,82 @@ def add_face_to_deepface_db(
         # Save to CSV
         df.to_csv(database_path, index=False)
         print(f"Successfully added {name} to the database")
+        return True
+        
+    except Exception as e:
+        print(f"Error adding face to database: {str(e)}")
+        return False
+
+def add_face_to_db(
+    image_path: str,
+    name: str,
+    model_name: str = MODEL,
+    detector_backend: str = "retinaface"
+) -> bool:
+    """
+    Add a face embedding to the PostgreSQL database
+    
+    Args:
+        image_path (str): Path to the image file
+        name (str): Name of the person
+        model_name (str): Face recognition model to use
+        detector_backend (str): Face detection model to use
+    
+    Returns:
+        bool: True if successful, False otherwise
+    """
+    try:
+        conn = get_db_connection()
+        
+        # Check if image file exists
+        if not os.path.exists(image_path):
+            print(f"Error: Image file '{image_path}' not found")
+            return False
+        
+        # Get face embedding
+        try:
+            embedding = get_face_embedding(
+                image_path,
+                model_name=model_name,
+                detector_backend=detector_backend
+            )
+            if isinstance(embedding, np.ndarray):
+                embedding = embedding.tolist()  # Convert NumPy array to list for JSON serialization
+        except Exception as e:
+            print(f"Error extracting face embedding: {str(e)}")
+            return False
+        
+        cursor = conn.cursor()
+        
+        # Check for the next available studentID
+        cursor.execute("""
+            SELECT COALESCE(MAX(studentID) + 1, 1) FROM Student;
+        """)
+        student_id = cursor.fetchone()[0]
+        
+        # Insert student into Student table
+        cursor.execute("""
+            INSERT INTO Student (studentID, name) 
+            VALUES (%s, %s) 
+            ON CONFLICT (studentID) DO NOTHING;
+        """, (student_id, name))
+        
+        # Convert embedding to JSON
+        face_encoding_json = json.dumps(embedding)
+        
+        # Insert or update face encoding into FaceEncoding table
+        cursor.execute("""
+            INSERT INTO FaceEncoding (studentID, faceEncoding) 
+            VALUES (%s, %s) 
+            ON CONFLICT (studentID) DO UPDATE SET faceEncoding = EXCLUDED.faceEncoding;
+        """, (student_id, face_encoding_json))
+        
+        # Commit changes
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        print(f"Successfully added or updated face encoding for {name} with ID {student_id}")
         return True
         
     except Exception as e:
@@ -270,7 +366,5 @@ def recognize_faces_deepface(
         
     print(f"\n✅ Recognition complete. Found {len(results)} matches.")
     return results
-
-
 
 

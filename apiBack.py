@@ -8,6 +8,7 @@ from typing import List
 from ultralytics import YOLO
 from supervision import Detections
 import traceback
+import tempfile
 import sys
 import os
 import logging
@@ -16,7 +17,7 @@ from psycopg2.extras import RealDictCursor
 from dotenv import load_dotenv
 from face_lookalike import recognize_facesAPI
 
-from face_lookalike_deepface import recognize_faces_deepface
+from face_lookalike_deepface import recognize_faces_deepface, load_known_faces,add_face_to_db
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
@@ -99,6 +100,43 @@ def recognize_faces_endpoint():
         print(f" Error in recognize_faces_endpoint: {str(e)}", flush=True)
         print(f" Traceback: {error_traceback}", flush=True)
         return jsonify({"error": str(e), "traceback": error_traceback}), 500
+
+@app.route("/add_face/", methods=['POST'])
+def add_face_endpoint():
+    if 'file' not in request.files or 'name' not in request.form:
+        return jsonify({"error": "File and name are required"}), 400
+
+    file = request.files['file']
+    name = request.form['name']
+
+    # Temporarily save uploaded image
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.jpg') as tmp_file:
+        file.save(tmp_file.name)
+        temp_image_path = tmp_file.name
+
+    try:
+        # Load existing names from database
+        _, known_names = load_known_faces()
+
+        if name in known_names:
+            os.unlink(temp_image_path)
+            return jsonify({"error": f"The name '{name}' already exists in the database."}), 400
+
+        # Add face to database
+        success = add_face_to_db(temp_image_path, name)
+
+        # Remove temporary file
+        os.unlink(temp_image_path)
+
+        if success:
+            return jsonify({"message": f"Successfully added '{name}' to the database."}), 201
+        else:
+            return jsonify({"error": "Failed to add face to database."}), 500
+
+    except Exception as e:
+        if os.path.exists(temp_image_path):
+            os.unlink(temp_image_path)
+        return jsonify({"error": str(e)}), 500
 
 @app.route("/students/", methods=['GET'])
 def get_all_students():

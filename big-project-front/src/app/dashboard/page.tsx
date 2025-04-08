@@ -83,7 +83,7 @@ const Dashboard: React.FC = () => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100">
-        <span className="text-xl">Loading...</span>
+        <span className="text-xl">Loading page...</span>
       </div>
     );
   }

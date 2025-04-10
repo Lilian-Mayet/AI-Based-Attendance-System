@@ -9,6 +9,9 @@ import logging
 from dotenv import load_dotenv
 load_dotenv()
 import json
+import time
+import concurrent.futures
+
 models = [
   "VGG-Face", 
   "Facenet", 
@@ -291,13 +294,20 @@ def recognize_faces_deepface(
         
         # Detect and get information about faces in the image
         print("🔍 Detecting faces in image...")
+
+        startTime = time.time()
+
         faces = DeepFace.extract_faces(
             img_path=image_path,
             enforce_detection=True,
             detector_backend=detector_backend
         )
+        endTime = time.time()
+        timePassed = endTime-startTime
+        print("Time passed = "+str(timePassed))
         print(f"✅ Found {len(faces)} faces")
         
+        startTime = time.time()
         # Get embeddings for all faces in the image
         embeddings = DeepFace.represent(
             img_path=image_path,
@@ -306,7 +316,12 @@ def recognize_faces_deepface(
             enforce_detection=True,
             align=True
         )
+        endTime = time.time()
+        timePassed = endTime-startTime
+        print("Time passed for embeddings = "+str(timePassed)) 
         
+
+        startTime = time.time()
         # Process each detected face
         for i, (face_data, embedding_obj) in enumerate(zip(faces, embeddings)):
             print(f"\n👤 Processing face {i+1}")
@@ -371,7 +386,10 @@ def recognize_faces_deepface(
             except Exception as e:
                 print(f"Error processing face {i+1}: {str(e)}")
                 continue
-                
+
+        endTime = time.time()
+        timePassed = endTime-startTime
+        print("Time passed for processing= "+str(timePassed)) 
     except Exception as e:
         print(f"Error in recognize_faces_deepface: {str(e)}")
         import traceback
@@ -381,3 +399,146 @@ def recognize_faces_deepface(
     return results
 
 
+def recognize_faces_deepface_parralelisation(
+    image_path: str,
+    database_path: str = "faceEncodingDeepface.csv",
+    model_name: str = MODEL,
+    detector_backend: str = "retinaface",
+    distance_metric: str = "cosine",
+    threshold: float = 0.70
+) -> Dict[str, Any]:
+    """
+    Recognize faces in an image using DeepFace
+    
+    Args:
+        image_path (str): Path to the image to analyze
+        database_path (str): Path to the CSV database file
+        model_name (str): Face recognition model to use
+        detector_backend (str): Face detection model to use
+        distance_metric (str): Distance metric for face comparison
+        threshold (float): Recognition threshold (lower = more strict)
+    
+    Returns:
+        dict: Dictionary with bounding box, name, and confidence for each recognized face
+    """
+    results = {}
+    print("\n=== Starting DeepFace Recognition ===")
+    
+    try:
+        # Load known faces
+        print("📚 Loading known faces from database...")
+        known_embeddings, known_names = load_known_faces(database_path)
+        if not known_embeddings:
+            print("No known faces found in database")
+            return results
+        print(f"✅ Loaded {len(known_names)} known faces")
+        
+        # Detect and get information about faces in the image
+        print("🔍 Detecting faces in image...")
+
+        startTime = time.time()
+
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            face_future = executor.submit(
+                DeepFace.extract_faces,
+                img_path=image_path,
+                enforce_detection=True,
+                detector_backend=detector_backend
+            )
+            
+            embedding_future = executor.submit(
+                DeepFace.represent,
+                img_path=image_path,
+                model_name=model_name,
+                detector_backend=detector_backend,
+                enforce_detection=True,
+                align=True
+            )
+    
+        faces = face_future.result()
+        embeddings = embedding_future.result()
+        endTime = time.time()
+        timePassed = endTime-startTime
+        print("Time passed for both = "+str(timePassed)) 
+        
+
+        startTime = time.time()
+        # Process each detected face
+        for i, (face_data, embedding_obj) in enumerate(zip(faces, embeddings)):
+            print(f"\n👤 Processing face {i+1}")
+            
+            try:
+                facial_area = face_data['facial_area']
+                embedding = np.array(embedding_obj["embedding"])
+                
+                # Compare with known embeddings
+                best_match_name = None
+                best_match_distance = float('inf')
+                
+                for db_embedding, name in zip(known_embeddings, known_names):
+                    if distance_metric == "cosine":
+                        distance = 1 - np.dot(embedding, db_embedding) / (
+                            np.linalg.norm(embedding) * np.linalg.norm(db_embedding)
+                        )
+                    elif distance_metric == "euclidean":
+                        distance = np.linalg.norm(embedding - db_embedding)
+                    else:
+                        raise ValueError(f"Unsupported distance metric: {distance_metric}")
+                    
+                    if distance < best_match_distance:
+                        best_match_distance = distance
+                        best_match_name = name
+                
+                # Convert distance to confidence
+                confidence = 1 - best_match_distance
+                
+                if confidence >= (1 - threshold):
+                    face_data = {
+                        'bounding_box': (
+                            facial_area['y'],
+                            facial_area['x'] + facial_area['w'],
+                            facial_area['y'] + facial_area['h'],
+                            facial_area['x']
+                        ),
+                        'name': best_match_name,
+                        'confidence': float(confidence)
+                    }
+                    
+                    # Update results
+                    if best_match_name not in results or confidence > results[best_match_name]['confidence']:
+                        results[best_match_name] = face_data
+                        print(f"✅ Matched with {best_match_name} (confidence: {confidence:.2%})")
+                else:
+                    # Assign a placeholder name for strangers
+                    stranger_id = f"stranger_{len([k for k in results if k.startswith('stranger_')]) + 1}"
+                    face_data = {
+                        'bounding_box': (
+                            facial_area['y'],
+                            facial_area['x'] + facial_area['w'],
+                            facial_area['y'] + facial_area['h'],
+                            facial_area['x']
+                        ),
+                        'name': stranger_id,
+                        'confidence': float(confidence)
+                    }
+                    results[stranger_id] = face_data
+                    print(f"❓ Stranger detected: {stranger_id} (confidence: {confidence:.2%})")
+                    
+            except Exception as e:
+                print(f"Error processing face {i+1}: {str(e)}")
+                continue
+
+        endTime = time.time()
+        timePassed = endTime-startTime
+        print("Time passed for processing= "+str(timePassed)) 
+    except Exception as e:
+        print(f"Error in recognize_faces_deepface: {str(e)}")
+        import traceback
+        print(f"Traceback: {traceback.format_exc()}")
+        
+    print(f"\n✅ Recognition complete. Found {len(results)} matches.")
+    return results
+
+
+recognize_faces_deepface(image_path="imgTest/class.jpg")
+recognize_faces_deepface_parralelisation(image_path="imgTest/class.jpg")

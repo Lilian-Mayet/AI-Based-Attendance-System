@@ -105,7 +105,7 @@ def recognize_faces_endpoint():
 
 @app.route("/add_face/", methods=['POST'])
 def add_face_endpoint():
-    time.sleep(1)
+    time.sleep(5)
     if 'file' not in request.files or 'name' not in request.form:
         return jsonify({"error": "File and name are required"}), 400
 

@@ -1,0 +1,100 @@
+/* AddFace.css */
+
+/* Keep existing styles if needed, like .loader */
+.loader {
+    border: 5px solid #f3f3f3; /* Light grey */
+    border-top: 5px solid #3498db; /* Blue */
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    animation: spin 1s linear infinite; /* Removed pulse-border for simplicity */
+  }
+  
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  
+  
+  /* --- New Scan Animation Styles --- */
+  
+  .scan-animation {
+    position: absolute;
+    inset: 0;
+    overflow: hidden; /* Keep animations contained */
+    z-index: 1; /* Ensure it's above the image but below text */
+  }
+  
+  /* Scanning Line */
+  .scan-line {
+    position: absolute;
+    left: 0;
+    top: 0; /* Start at the top */
+    width: 100%;
+    height: 3px; /* Line thickness */
+    background: linear-gradient(to bottom, rgba(0, 255, 0, 0), rgba(50, 255, 50, 0.6), rgba(0, 255, 0, 0)); /* Faded green line */
+    box-shadow: 0 0 10px rgba(50, 255, 50, 0.5);
+    animation: scan 3s linear infinite; /* Slower, smoother scan */
+    z-index: 2;
+  }
+  
+  @keyframes scan {
+    0% { top: -10px; } /* Start slightly above */
+    100% { top: 100%; } /* Move all the way down */
+  }
+  
+  /* Binary Overlay - optional, can be performance intensive */
+  .binary-overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none; /* Allow clicks through */
+      z-index: 3;
+  }
+  
+  @keyframes binary-flicker {
+      0%, 100% { opacity: 0.7; }
+      50% { opacity: 0.3; }
+  }
+  
+  /* Random Segments/Brackets */
+  .segment {
+      position: absolute;
+      border-color: rgba(0, 255, 0, 0.6); /* Green color */
+      border-style: solid;
+      width: 20px;
+      height: 20px;
+      z-index: 4;
+      animation: segment-appear 2s infinite;
+  }
+  
+  .segment-1 { /* Top-left */
+      top: 10%;
+      left: 10%;
+      border-width: 2px 0 0 2px; /* Top and left border */
+      animation-delay: 0s;
+  }
+  .segment-2 { /* Top-right */
+      top: 15%; /* Slightly different positions/timing */
+      right: 10%;
+      border-width: 2px 2px 0 0; /* Top and right border */
+      animation-delay: 0.5s;
+  }
+  .segment-3 { /* Bottom-left */
+      bottom: 10%;
+      left: 15%;
+      border-width: 0 0 2px 2px; /* Bottom and left border */
+       animation-delay: 1s;
+  }
+  .segment-4 { /* Bottom-right */
+      bottom: 15%;
+      right: 15%;
+      border-width: 0 2px 2px 0; /* Bottom and right border */
+       animation-delay: 1.5s;
+  }
+  
+  @keyframes segment-appear {
+    0% { opacity: 0; transform: scale(0.8); }
+    25% { opacity: 0.8; transform: scale(1); }
+    75% { opacity: 0.8; transform: scale(1); }
+    100% { opacity: 0; transform: scale(0.8); }
+  }

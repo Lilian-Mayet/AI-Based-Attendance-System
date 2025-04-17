@@ -16,6 +16,7 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 from dotenv import load_dotenv
 from face_lookalike import recognize_facesAPI
+import time
 
 from face_lookalike_deepface import recognize_faces_deepface, load_known_faces,add_face_to_db
 
@@ -26,6 +27,7 @@ load_dotenv()
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
 logger = logging.getLogger(__name__)
 print(os.getenv("DB_HOST"))
 # Database connection function
@@ -103,6 +105,7 @@ def recognize_faces_endpoint():
 
 @app.route("/add_face/", methods=['POST'])
 def add_face_endpoint():
+    time.sleep(1)
     if 'file' not in request.files or 'name' not in request.form:
         return jsonify({"error": "File and name are required"}), 400
 

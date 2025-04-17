@@ -111,6 +111,7 @@ def add_face_to_deepface_db(
         bool: True if successful, False otherwise
     """
     try:
+  
         # Check if image file exists
         if not os.path.exists(image_path):
             print(f"Error: Image file '{image_path}' not found")
@@ -540,5 +541,5 @@ def recognize_faces_deepface_parralelisation(
     return results
 
 
-recognize_faces_deepface(image_path="imgTest/class.jpg")
-recognize_faces_deepface_parralelisation(image_path="imgTest/class.jpg")
+#recognize_faces_deepface(image_path="imgTest/class.jpg")
+#recognize_faces_deepface_parralelisation(image_path="imgTest/class.jpg")

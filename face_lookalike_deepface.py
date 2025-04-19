@@ -401,37 +401,51 @@ def recognize_faces_deepface(
     return results
 
 
-def load_known_faces_from_db() -> Tuple[List[np.ndarray], List[str]]:
+def load_known_faces_from_db() -> Tuple[Dict[Tuple[float, ...], str]]:
     """
-    Load known face encodings and student IDs from the database.
+    Load known face encodings and student names from the database.
 
     Returns:
-        Tuple[List[np.ndarray], List[str]]: A tuple containing lists of
-                                            face embeddings (as NumPy arrays)
-                                            and corresponding student IDs (as strings).
+        Dict[Tuple[float, ...], str]: A dictionary where keys are face embeddings
+                               (as tuples) and values are the
+                               corresponding student names.
     """
-    known_embeddings = []
-    known_names = []
+    known_faces = {}
     conn = None
     cursor = None
     try:
         conn = get_db_connection()
         cursor = conn.cursor(cursor_factory=RealDictCursor)
+
+        # Fetch student IDs and their encodings
         cursor.execute("SELECT studentid, faceencoding FROM faceencoding")
-        rows = cursor.fetchall()
-        for row in rows:
+        encoding_rows = cursor.fetchall()
+
+        # Fetch student IDs and their names
+        student_name_map = {}
+        cursor.execute("SELECT studentid, name FROM student")
+        student_rows = cursor.fetchall()
+        for row in student_rows:
+            student_name_map[str(row['studentid'])] = row['name']
+
+        for row in encoding_rows:
             student_id = str(row['studentid'])
             encoding_str = row['faceencoding']
             try:
                 # Convert the string representation of the list to an actual list of floats
                 encoding_list = json.loads(encoding_str)
                 encoding_array = np.array(encoding_list, dtype=np.float32)
-                known_embeddings.append(encoding_array)
-                known_names.append(student_id)
+                # Convert NumPy array to a tuple to make it hashable
+                encoding_tuple = tuple(encoding_array.flatten().tolist())
+                if student_id in student_name_map:
+                    known_faces[encoding_tuple] = student_name_map[student_id]
+                else:
+                    print(f"Warning: Student ID {student_id} found in faceencoding but not in student table.")
             except json.JSONDecodeError as e:
                 print(f"Error decoding face encoding for student {student_id}: {e}")
             except Exception as e:
                 print(f"Error processing face encoding for student {student_id}: {e}")
+
     except Exception as e:
         print(f"Error loading known faces from database: {e}")
         import traceback
@@ -441,17 +455,17 @@ def load_known_faces_from_db() -> Tuple[List[np.ndarray], List[str]]:
             cursor.close()
         if conn:
             conn.close()
-    return known_embeddings, known_names
+    return known_faces
 
 def recognize_faces_deepface_parralelisation(
     image_path: str,
     model_name: str = MODEL,
     detector_backend: str = "retinaface",
     distance_metric: str = "cosine",
-    threshold: float = 0.70
+    threshold: float = 0.50
 ) -> Dict[str, Any]:
     """
-    Recognize faces in an image using DeepFace, fetching known faces from the database.
+    Recognize faces in an image using DeepFace, fetching known faces and names from the database.
 
     Args:
         image_path (str): Path to the image to analyze
@@ -461,20 +475,23 @@ def recognize_faces_deepface_parralelisation(
         threshold (float): Recognition threshold (lower = more strict)
 
     Returns:
-        dict: Dictionary with bounding box, name (student ID or 'stranger'),
+        dict: Dictionary with bounding box, name (student name or 'stranger'),
               and confidence for each recognized face.
     """
     results = {}
-    print("\n=== Starting DeepFace Recognition (Database) ===")
+    print("\n=== Starting DeepFace Recognition (Database with Names) ===")
 
     try:
-        # Load known faces from the database
-        print("📚 Loading known faces from database...")
-        known_embeddings, known_names = load_known_faces_from_db()
-        if not known_embeddings:
+        # Load known faces and names from the database
+        print("📚 Loading known faces and names from database...")
+        known_faces = load_known_faces_from_db()
+        if not known_faces:
             print("No known faces found in the database.")
             return results
-        print(f"✅ Loaded {len(known_names)} known faces.")
+        print(f"✅ Loaded {len(known_faces)} known faces.")
+
+        known_embeddings = list(known_faces.keys())
+        known_names = list(known_faces.values())
 
         # Detect and get information about faces in the image
         print("🔍 Detecting faces in image...")
@@ -548,7 +565,7 @@ def recognize_faces_deepface_parralelisation(
                     # Update results
                     if best_match_name not in results or confidence > results[best_match_name]['confidence']:
                         results[best_match_name] = face_data
-                        print(f"✅ Matched with Student ID {best_match_name} (confidence: {confidence:.2%})")
+                        print(f"✅ Matched with Student {best_match_name} (confidence: {confidence:.2%})")
                 else:
                     # Assign a placeholder name for strangers
                     stranger_id = f"stranger_{len([k for k in results if k.startswith('stranger_')]) + 1}"
@@ -580,6 +597,5 @@ def recognize_faces_deepface_parralelisation(
 
     print(f"\n✅ Recognition complete. Found {len(results)} matches.")
     return results
-
 #recognize_faces_deepface(image_path="imgTest/class.jpg")
 #recognize_faces_deepface_parralelisation(image_path="imgTest/class.jpg")

@@ -8,6 +8,8 @@ import { Loader2, Upload, Camera } from "lucide-react";
 import { motion } from "framer-motion";
 import { useRouter, useSearchParams } from "next/navigation";
 
+import "./FaceRecognition.css";
+
 interface Face {
     name: string;
     bounding_box: [number, number, number, number]; // [top, right, bottom, left]

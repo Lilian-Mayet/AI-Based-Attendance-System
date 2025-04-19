@@ -55,6 +55,7 @@ const EditCoursePage: React.FC = () => {
                     );
                     setCourse(courseResponse.data.course);
                     setEnrolledStudents(courseResponse.data.enrolled_students);
+                    setLoading(false);
                 } else {
                     setError("Invalid Course ID in URL.");
                     toast.error("Invalid Course ID in URL.");
@@ -117,7 +118,7 @@ const EditCoursePage: React.FC = () => {
             setLoading(true);
             setError(null);
             if (courseId) {
-                await axios.put(`http://localhost:8000/courses/${courseId}/students`, {
+                await axios.put(`http://localhost:8000/edit-courses/${courseId}/students`, {
                     add: studentsToAdd,
                     remove: studentsToRemove,
                 });

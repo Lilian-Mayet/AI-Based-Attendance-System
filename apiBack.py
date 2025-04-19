@@ -380,7 +380,7 @@ def teacher_login():
         return jsonify({"error": str(e)}), 500
 
 
-@app.route("/courses/<int:course_id>/students", methods=['PUT'])
+@app.route("/edit-courses/<int:course_id>/students", methods=['PUT'])
 def update_course_students(course_id):
     """
     Update the students enrolled in a specific course.

@@ -425,6 +425,72 @@ def update_course_students(course_id):
         logger.error(f"Traceback: {error_traceback}")
         return jsonify({"error": str(e)}), 500
 
+
+@app.route("/courses/", methods=['POST'])
+def create_course():
+    """Create a new course with a teacher and initial students."""
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "Invalid JSON data"}), 400
+
+    teacher_id = data.get('teacherid')
+    subject = data.get('subject')
+    initial_students = data.get('initial_students', [])
+
+    if not teacher_id or not isinstance(teacher_id, int):
+        return jsonify({"error": "Teacher ID is required and must be an integer"}), 400
+    if not subject or not isinstance(subject, str) or not subject.strip():
+        return jsonify({"error": "Subject is required and must be a non-empty string"}), 400
+    if not isinstance(initial_students, list):
+        return jsonify({"error": "Initial students must be a list of student IDs"}), 400
+    for student_id in initial_students:
+        if not isinstance(student_id, int):
+            return jsonify({"error": "Student IDs in the initial list must be integers"}), 400
+
+    conn = None
+    try:
+        conn = get_db_connection()
+        if conn is None:
+            return jsonify({"error": "Failed to connect to the database"}), 500
+
+        cursor = conn.cursor()
+
+        # 1. Create the new course
+        cursor.execute("INSERT INTO course (teacherid, subject) VALUES (%s, %s) RETURNING courseid", (teacher_id, subject))
+        new_course_id = cursor.fetchone()[0]
+
+        # 2. Enroll the initial students
+        for student_id in initial_students:
+            try:
+                cursor.execute("INSERT INTO studentcourses (studentid, courseid) VALUES (%s, %s)", (student_id, new_course_id))
+            except psycopg2.Error as e:
+                # Log the error but continue with other students
+                logger.error(f"Error enrolling student {student_id} in course {new_course_id}: {e}")
+                conn.rollback() # Rollback the current student enrollment attempt
+
+        conn.commit()
+        return jsonify({"message": "Course created successfully", "courseid": new_course_id}), 201
+
+    except psycopg2.Error as e:
+        if conn:
+            conn.rollback()
+        error_traceback = traceback.format_exc()
+        logger.error(f"Database error during course creation: {e}")
+        logger.error(f"Traceback: {error_traceback}")
+        return jsonify({"error": str(e)}), 500
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        error_traceback = traceback.format_exc()
+        logger.error(f"Unexpected error during course creation: {e}")
+        logger.error(f"Traceback: {error_traceback}")
+        return jsonify({"error": str(e)}), 500
+    finally:
+        if conn:
+            cursor.close()
+            conn.close()
+
+
 if __name__ == '__main__':
     # Force stdout to flush immediately
     sys.stdout.reconfigure(line_buffering=True)

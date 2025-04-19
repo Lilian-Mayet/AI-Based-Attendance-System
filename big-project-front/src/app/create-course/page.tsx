@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { ListBox } from "../components/ui/list-box";
-import { ListBoxItem } from "../components/ui/list-box";
+import { ListBoxItem } from "../components/ui/list-box-item";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { User } from "lucide-react";

@@ -44,3 +44,5 @@ coverage/
 
 # Git-specific
 .git/
+
+temp.jpg

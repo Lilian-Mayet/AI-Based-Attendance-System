@@ -379,6 +379,52 @@ def teacher_login():
         logger.error(f"Traceback: {error_traceback}")
         return jsonify({"error": str(e)}), 500
 
+
+@app.route("/courses/<int:course_id>/students", methods=['PUT'])
+def update_course_students(course_id):
+    """
+    Update the students enrolled in a specific course.
+    Expects a JSON payload with 'add' and/or 'remove' lists of student IDs.
+    """
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "No data provided"}), 400
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        if 'add' in data and isinstance(data['add'], list):
+            for student_id in data['add']:
+                try:
+                    cursor.execute(
+                        "INSERT INTO studentcourses (studentid, courseid) VALUES (%s, %s)",
+                        (student_id, course_id)
+                    )
+                except psycopg2.errors.UniqueViolation:
+                    logger.warning(f"Student {student_id} is already enrolled in course {course_id}")
+
+        if 'remove' in data and isinstance(data['remove'], list):
+            for student_id in data['remove']:
+                cursor.execute(
+                    "DELETE FROM studentcourses WHERE studentid = %s AND courseid = %s",
+                    (student_id, course_id)
+                )
+
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+        return jsonify({"message": f"Course {course_id} updated successfully."}), 200
+
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        error_traceback = traceback.format_exc()
+        logger.error(f"Error updating course students: {str(e)}")
+        logger.error(f"Traceback: {error_traceback}")
+        return jsonify({"error": str(e)}), 500
+
 if __name__ == '__main__':
     # Force stdout to flush immediately
     sys.stdout.reconfigure(line_buffering=True)

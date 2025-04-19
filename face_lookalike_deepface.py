@@ -11,6 +11,7 @@ load_dotenv()
 import json
 import time
 import concurrent.futures
+from psycopg2.extras import RealDictCursor
 
 models = [
   "VGG-Face", 
@@ -400,43 +401,83 @@ def recognize_faces_deepface(
     return results
 
 
+def load_known_faces_from_db() -> Tuple[List[np.ndarray], List[str]]:
+    """
+    Load known face encodings and student IDs from the database.
+
+    Returns:
+        Tuple[List[np.ndarray], List[str]]: A tuple containing lists of
+                                            face embeddings (as NumPy arrays)
+                                            and corresponding student IDs (as strings).
+    """
+    known_embeddings = []
+    known_names = []
+    conn = None
+    cursor = None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
+        cursor.execute("SELECT studentid, faceencoding FROM faceencoding")
+        rows = cursor.fetchall()
+        for row in rows:
+            student_id = str(row['studentid'])
+            encoding_str = row['faceencoding']
+            try:
+                # Convert the string representation of the list to an actual list of floats
+                encoding_list = json.loads(encoding_str)
+                encoding_array = np.array(encoding_list, dtype=np.float32)
+                known_embeddings.append(encoding_array)
+                known_names.append(student_id)
+            except json.JSONDecodeError as e:
+                print(f"Error decoding face encoding for student {student_id}: {e}")
+            except Exception as e:
+                print(f"Error processing face encoding for student {student_id}: {e}")
+    except Exception as e:
+        print(f"Error loading known faces from database: {e}")
+        import traceback
+        print(f"Traceback: {traceback.format_exc()}")
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+    return known_embeddings, known_names
+
 def recognize_faces_deepface_parralelisation(
     image_path: str,
-    database_path: str = "faceEncodingDeepface.csv",
     model_name: str = MODEL,
     detector_backend: str = "retinaface",
     distance_metric: str = "cosine",
     threshold: float = 0.70
 ) -> Dict[str, Any]:
     """
-    Recognize faces in an image using DeepFace
-    
+    Recognize faces in an image using DeepFace, fetching known faces from the database.
+
     Args:
         image_path (str): Path to the image to analyze
-        database_path (str): Path to the CSV database file
         model_name (str): Face recognition model to use
         detector_backend (str): Face detection model to use
         distance_metric (str): Distance metric for face comparison
         threshold (float): Recognition threshold (lower = more strict)
-    
+
     Returns:
-        dict: Dictionary with bounding box, name, and confidence for each recognized face
+        dict: Dictionary with bounding box, name (student ID or 'stranger'),
+              and confidence for each recognized face.
     """
     results = {}
-    print("\n=== Starting DeepFace Recognition ===")
-    
+    print("\n=== Starting DeepFace Recognition (Database) ===")
+
     try:
-        # Load known faces
+        # Load known faces from the database
         print("📚 Loading known faces from database...")
-        known_embeddings, known_names = load_known_faces(database_path)
+        known_embeddings, known_names = load_known_faces_from_db()
         if not known_embeddings:
-            print("No known faces found in database")
+            print("No known faces found in the database.")
             return results
-        print(f"✅ Loaded {len(known_names)} known faces")
-        
+        print(f"✅ Loaded {len(known_names)} known faces.")
+
         # Detect and get information about faces in the image
         print("🔍 Detecting faces in image...")
-
         startTime = time.time()
 
         with concurrent.futures.ThreadPoolExecutor() as executor:
@@ -446,7 +487,7 @@ def recognize_faces_deepface_parralelisation(
                 enforce_detection=True,
                 detector_backend=detector_backend
             )
-            
+
             embedding_future = executor.submit(
                 DeepFace.represent,
                 img_path=image_path,
@@ -455,27 +496,26 @@ def recognize_faces_deepface_parralelisation(
                 enforce_detection=True,
                 align=True
             )
-    
+
         faces = face_future.result()
         embeddings = embedding_future.result()
         endTime = time.time()
-        timePassed = endTime-startTime
-        print("Time passed for both = "+str(timePassed)) 
-        
+        timePassed = endTime - startTime
+        print(f"Time passed for detection and representation: {timePassed:.4f} seconds")
 
         startTime = time.time()
         # Process each detected face
         for i, (face_data, embedding_obj) in enumerate(zip(faces, embeddings)):
             print(f"\n👤 Processing face {i+1}")
-            
+
             try:
                 facial_area = face_data['facial_area']
                 embedding = np.array(embedding_obj["embedding"])
-                
+
                 # Compare with known embeddings
                 best_match_name = None
                 best_match_distance = float('inf')
-                
+
                 for db_embedding, name in zip(known_embeddings, known_names):
                     if distance_metric == "cosine":
                         distance = 1 - np.dot(embedding, db_embedding) / (
@@ -485,14 +525,14 @@ def recognize_faces_deepface_parralelisation(
                         distance = np.linalg.norm(embedding - db_embedding)
                     else:
                         raise ValueError(f"Unsupported distance metric: {distance_metric}")
-                    
+
                     if distance < best_match_distance:
                         best_match_distance = distance
                         best_match_name = name
-                
+
                 # Convert distance to confidence
                 confidence = 1 - best_match_distance
-                
+
                 if confidence >= (1 - threshold):
                     face_data = {
                         'bounding_box': (
@@ -504,11 +544,11 @@ def recognize_faces_deepface_parralelisation(
                         'name': best_match_name,
                         'confidence': float(confidence)
                     }
-                    
+
                     # Update results
                     if best_match_name not in results or confidence > results[best_match_name]['confidence']:
                         results[best_match_name] = face_data
-                        print(f"✅ Matched with {best_match_name} (confidence: {confidence:.2%})")
+                        print(f"✅ Matched with Student ID {best_match_name} (confidence: {confidence:.2%})")
                 else:
                     # Assign a placeholder name for strangers
                     stranger_id = f"stranger_{len([k for k in results if k.startswith('stranger_')]) + 1}"
@@ -524,22 +564,22 @@ def recognize_faces_deepface_parralelisation(
                     }
                     results[stranger_id] = face_data
                     print(f"❓ Stranger detected: {stranger_id} (confidence: {confidence:.2%})")
-                    
+
             except Exception as e:
                 print(f"Error processing face {i+1}: {str(e)}")
                 continue
 
         endTime = time.time()
-        timePassed = endTime-startTime
-        print("Time passed for processing= "+str(timePassed)) 
+        timePassed = endTime - startTime
+        print(f"Time passed for recognition: {timePassed:.4f} seconds")
+
     except Exception as e:
         print(f"Error in recognize_faces_deepface: {str(e)}")
         import traceback
         print(f"Traceback: {traceback.format_exc()}")
-        
+
     print(f"\n✅ Recognition complete. Found {len(results)} matches.")
     return results
-
 
 #recognize_faces_deepface(image_path="imgTest/class.jpg")
 #recognize_faces_deepface_parralelisation(image_path="imgTest/class.jpg")

@@ -34,6 +34,21 @@ export default function FaceRecognitionV2() {
     const searchParams = useSearchParams();
     const router = useRouter();
 
+    const generateRandomBinaryPositions = useCallback(() => {
+      const binaryArray = [];
+      const totalNumbers = 80; // Adjust number of digits as needed
+    
+      for (let i = 0; i < totalNumbers; i++) {
+        binaryArray.push({
+          num: Math.round(Math.random()),
+          top: Math.random() * 100,  // Random vertical position (%)
+          left: Math.random() * 100, // Random horizontal position (%)
+          animationDelay: `${Math.random() * 1.5}s`, // Randomize animation delay
+        });
+      }
+    
+      return binaryArray;
+    }, [isLoading]);
     useEffect(() => {
         // Retrieve allowedStudents from URL or localStorage
         const studentsFromQuery = searchParams.get("allowedStudents");
@@ -265,81 +280,103 @@ export default function FaceRecognitionV2() {
 
             {/* Main Card */}
             <Card className="w-3/4 overflow-hidden relative shadow-xl border border-gray-200">
-                <CardHeader className="bg-gradient-to-r from-indigo-500 to-pink-500 text-white">
-                    <CardTitle className="text-3xl font-bold tracking-tight">Face Recognition</CardTitle>
-                </CardHeader>
-                <CardContent className="p-6 relative">
-                    <div className="flex justify-center gap-4 mb-4">
-                        <Button
-                            onClick={() => fileInputRef.current?.click()}
-                            className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-6 rounded-lg flex items-center gap-2 shadow-md transition"
-                            disabled={useCamera}
-                        >
-                            <Upload className="w-5 h-5" /> Upload Picture
-                        </Button>
-                        <Button
-                            onClick={startCamera}
-                            className="bg-green-600 hover:bg-green-700 text-white py-2 px-6 rounded-lg flex items-center gap-2 shadow-md transition"
-                            disabled={useCamera}
-                        >
-                            <Camera className="w-5 h-5" /> Use Front Camera
-                        </Button>
-                    </div>
-                    <input type="file" accept="image/*" ref={fileInputRef} onChange={handleImageUpload} className="hidden" />
+        <CardHeader className="bg-gradient-to-r from-indigo-500 to-pink-500 text-white">
+          <CardTitle className="text-3xl font-bold tracking-tight">Face Recognition</CardTitle>
+        </CardHeader>
+        <CardContent className="p-6 relative">
+          <div className="flex justify-center gap-4 mb-4">
+            <Button
+              onClick={() => fileInputRef.current?.click()}
+              className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-6 rounded-lg flex items-center gap-2 shadow-md transition"
+              disabled={useCamera}
+            >
+              <Upload className="w-5 h-5" /> Upload Picture
+            </Button>
+            <Button
+              onClick={startCamera}
+              className="bg-green-600 hover:bg-green-700 text-white py-2 px-6 rounded-lg flex items-center gap-2 shadow-md transition"
+              disabled={useCamera}
+            >
+              <Camera className="w-5 h-5" /> Use Front Camera
+            </Button>
+          </div>
+          <input type="file" accept="image/*" ref={fileInputRef} onChange={handleImageUpload} className="hidden" />
 
-                    {useCamera && (
-                        <div ref={previewRef} className="relative mt-4 border border-gray-300 rounded-lg overflow-hidden shadow-md flex flex-col items-center">
-                            <video ref={videoRef} style={getCameraPreviewStyle()} autoPlay playsInline />
-                            <Button onClick={takePicture} className="mt-2 bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-lg shadow-md transition">
-                                Take Picture
-                            </Button>
-                        </div>
-                    )}
+          {useCamera && (
+            <div ref={previewRef} className="relative mt-4 border border-gray-300 rounded-lg overflow-hidden shadow-md flex flex-col items-center">
+              <video ref={videoRef} style={getCameraPreviewStyle()} autoPlay playsInline />
+              <Button onClick={takePicture} className="mt-2 bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-lg shadow-md transition">
+                Take Picture
+              </Button>
+            </div>
+          )}
 
-                    {!useCamera && image && originalImageSize && (
-                        <div className="relative mt-4 border border-gray-300 rounded-lg overflow-hidden shadow-md flex justify-center">
-                            <Image ref={imageRef} src={image} alt="Uploaded" width={originalImageSize.width} height={originalImageSize.height} className="object-contain" style={{ maxWidth: '100%', height: 'auto' }} />
-                            {faces.map((face, index) => {
-                                const scaledBox = getScaledBoundingBox(face);
-                                return (
-                                    <motion.div
-                                        key={index}
-                                        initial={{ opacity: 0 }}
-                                        animate={{ opacity: 1 }}
-                                        className="absolute border-4 border-red-500"
-                                        style={{
-                                            top: scaledBox.top,
-                                            left: scaledBox.left,
-                                            width: scaledBox.width,
-                                            height: scaledBox.height,
-                                        }}
-                                    />
-                                );
-                            })}
-                            {selectedFace && originalImageSize && (
-                                <motion.div
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    className="absolute border-4 border-blue-500"
-                                    style={getScaledBoundingBox(selectedFace)}
-                                />
-                            )}
-                        </div>
-                    )}
+          {!useCamera && image && originalImageSize && (
+            <div className="relative mt-4 border border-gray-300 rounded-lg overflow-hidden shadow-md flex justify-center">
+              <Image ref={imageRef} src={image} alt="Uploaded" width={originalImageSize.width} height={originalImageSize.height} className="object-contain" style={{ maxWidth: '100%', height: 'auto' }} />
 
-                    {!useCamera && isLoading && (
-                        <div className="mt-4 flex items-center justify-center text-gray-600">
-                            <Loader2 className="animate-spin mr-2" /> Processing image...
-                        </div>
-                    )}
+              {faces.map((face, index) => (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="absolute border-4 border-red-500"
+                  style={getScaledBoundingBox(face)}
+                />
+              ))}
+              {selectedFace && originalImageSize && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="absolute border-4 border-blue-500"
+                  style={getScaledBoundingBox(selectedFace)}
+                />
+              )}
 
-                    {!useCamera && error && (
-                        <div className="mt-4 text-red-600 font-semibold">
-                            ⚠️ {error}
-                        </div>
-                    )}
-                </CardContent>
-            </Card>
-        </div>
-    );
+              {/* Scanning animation overlay */}
+              {isLoading && (
+  <div className="scan-animation">
+    <div className="scan-line" />
+    <div className="segment segment-1" />
+    <div className="segment segment-2" />
+    <div className="segment segment-3" />
+    <div className="segment segment-4" />
+
+    {/* Randomly positioned binary numbers */}
+    <div className="binary-overlay">
+      {generateRandomBinaryPositions().map((item, idx) => (
+        <span
+          key={idx}
+          className="binary-number"
+          style={{
+            top: `${item.top}%`,
+            left: `${item.left}%`,
+            animationDelay: item.animationDelay,
+          }}
+        >
+          {item.num}
+        </span>
+      ))}
+    </div>
+  </div>
+)}
+
+            </div>
+          )}
+
+          {!useCamera && isLoading && (
+            <div className="mt-4 flex items-center justify-center text-gray-600">
+              <Loader2 className="animate-spin mr-2" /> Processing image...
+            </div>
+          )}
+
+          {!useCamera && error && (
+            <div className="mt-4 text-red-600 font-semibold">
+              ⚠️ {error}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
 }

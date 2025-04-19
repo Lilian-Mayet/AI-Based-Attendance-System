@@ -43,17 +43,27 @@
     100% { top: 100%; } /* Move all the way down */
   }
   
-  /* Binary Overlay - optional, can be performance intensive */
-  .binary-overlay {
-      position: absolute;
-      inset: 0;
-      pointer-events: none; /* Allow clicks through */
-      z-index: 3;
+/* Binary numbers overlay style */
+.binary-overlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    font-family: 'Courier New', Courier, monospace;
+    color: rgba(0, 255, 0, 0.5);
+    font-size: 14px;
+    user-select: none;
+    overflow: hidden;
+    z-index: 2;
+  }
+  
+  .binary-number {
+    position: absolute; /* Ensure each number is absolutely positioned */
+    animation: binary-flicker 1.5s infinite;
   }
   
   @keyframes binary-flicker {
-      0%, 100% { opacity: 0.7; }
-      50% { opacity: 0.3; }
+    0%, 100% { opacity: 0.8; }
+    50% { opacity: 0.2; }
   }
   
   /* Random Segments/Brackets */

@@ -73,10 +73,10 @@ const LoginPage: React.FC = () => {
           </button>
         </form>
         <button
-          onClick={() => router.push("/add-face")}
+          onClick={() => router.push("/test-actions")}
           className="mt-4 w-full bg-gray-300 text-gray-800 py-2 px-4 rounded-md"
         >
-          Add Face
+          Go to Demo Mode
         </button>
       </div>
     </div>

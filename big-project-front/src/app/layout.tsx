@@ -11,6 +11,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="en">
       <body className="bg-gray-100"> {/* Example body styling */}
+      
         <main>{children}</main>
         <Footer />
       </body>

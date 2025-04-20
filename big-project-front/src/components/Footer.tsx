@@ -50,7 +50,7 @@ const Footer: React.FC<FooterProps> = () => {
             <p><a href={`mailto:${email}`} style={{ color: 'white', textDecoration: 'none' }}>{email}</a></p>
           </div>
         </div>
-        <p style={{ fontSize: '0.7rem', color: '#888' }}>&copy; {new Date().getFullYear()} {companyName}. All rights reserved.</p>
+        
       </div>
     </footer>
   );

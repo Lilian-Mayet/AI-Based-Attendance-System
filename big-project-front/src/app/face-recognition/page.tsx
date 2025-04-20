@@ -245,7 +245,7 @@ export default function FaceRecognitionV2() {
                 const calculatedHeight = containerWidth * imageAspect;
 
                  // Use a reasonable maxHeight, e.g., viewport height minus some padding
-                const maxHeight = window.innerHeight * 0.7;
+                const maxHeight = window.innerHeight * 0.6;
 
                 let displayedWidth = containerWidth;
                 let displayedHeight = calculatedHeight;
@@ -339,7 +339,7 @@ export default function FaceRecognitionV2() {
     return (
         <div className="flex flex-col md:flex-row gap-6 p-4 md:p-6 bg-gray-50 min-h-screen">
             {/* Sidebar */}
-            <div className="w-full md:w-1/4 p-4 md:p-6 bg-white rounded-xl shadow-lg border border-gray-200 order-2 md:order-1 max-h-[90vh] overflow-y-auto">
+            <div className="w-full md:w-1/4 p-4 md:p-6 bg-white rounded-xl shadow-lg border border-gray-200 order-2 md:order-1 max-h-[60vh] overflow-y-auto">
                 {/* Expected Students List */}
                 <h2 className="text-lg md:text-xl font-bold mb-3 md:mb-4 text-gray-800 sticky top-0 bg-white py-2 z-10">Expected Students</h2>
                 <ul className="mb-4">

@@ -1,6 +1,6 @@
 // src/components/Footer.tsx
 import React from 'react';
-import Image from 'next/image'; // Import Next.js Image component for optimized images
+import Image from 'next/image';
 
 interface FooterProps {}
 
@@ -19,44 +19,39 @@ const Footer: React.FC<FooterProps> = () => {
       style={{
         backgroundColor: 'black',
         color: 'white',
-        padding: '2rem',
-        textAlign: 'center',
+        padding: '1.5rem', // Slightly reduced overall padding
+        textAlign: 'left', // Align text to the left within its container
         position: 'fixed',
         bottom: 0,
         width: '100%',
         fontSize: '0.9rem',
         lineHeight: '1.6',
-        display: 'flex',
-        flexDirection: 'column', // Arrange items vertically
-        alignItems: 'center', // Center items horizontally
+        display: 'flex', // Use flexbox for the main layout
+        alignItems: 'center', // Vertically align items in the center
       }}
     >
-      <div style={{ marginBottom: '1rem' }}>
+      {/* Logo Section (takes approximately 20% width) */}
+      <div style={{ flex: '0 0 20%', marginRight: '1.5rem' }}>
         {logoSrc && (
-          <div style={{ marginBottom: '0.5rem' }}>
-            <Image src={logoSrc} alt="EduTrack AI Logo" width={100} height={40} /> {/* Adjust width and height */}
-          </div>
+          <Image src={logoSrc} alt="EduTrack AI Logo" width={100} height={40} style={{ objectFit: 'contain' }} />
         )}
-        <h3 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '0.2rem' }}>{companyName}</h3>
+      </div>
+
+      {/* Text Content Section (takes the remaining space) */}
+      <div style={{ flex: '1' }}>
+        <h3 style={{ fontSize: '1.2rem', fontWeight: 'bold', marginBottom: '0.2rem' }}>{companyName}</h3>
         <p style={{ fontSize: '0.8rem', color: '#ccc', marginBottom: '0.5rem' }}>
-          {tagline}
-          <br />
-          {description}
+          {tagline} <br /> {description}
         </p>
-      </div>
-      <hr style={{ borderTop: '1px solid #555', margin: '1rem 0', width: '80%' }} />
-      <div style={{ display: 'flex', justifyContent: 'space-around', width: '80%', marginBottom: '0.5rem' }}>
-        <p>Developed by: {myName} & {colleagueName}</p>
-        <div>
-          <p>
-            Contact: <a href={`tel:${phoneNumber}`} style={{ color: 'white', textDecoration: 'none' }}>{phoneNumber}</a>
-          </p>
-          <p>
-            <a href={`mailto:${email}`} style={{ color: 'white', textDecoration: 'none' }}>{email}</a>
-          </p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.8rem' }}>
+          <p>Developed by: {myName} & {colleagueName}</p>
+          <div>
+            <p>Contact: <a href={`tel:${phoneNumber}`} style={{ color: 'white', textDecoration: 'none' }}>{phoneNumber}</a></p>
+            <p><a href={`mailto:${email}`} style={{ color: 'white', textDecoration: 'none' }}>{email}</a></p>
+          </div>
         </div>
+        <p style={{ fontSize: '0.7rem', color: '#888' }}>&copy; {new Date().getFullYear()} {companyName}. All rights reserved.</p>
       </div>
-      <p style={{ fontSize: '0.8rem' }}>&copy; {new Date().getFullYear()} {companyName}. All rights reserved.</p>
     </footer>
   );
 };

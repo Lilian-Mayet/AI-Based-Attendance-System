@@ -98,7 +98,11 @@ const TestActionsPage: React.FC = () => {
     };
 
     const handleEditCourse = () => {
-        router.push("/dashboard"); // Navigate to dashboard for editing
+        if (selectedCourseId) {
+            router.push(`/edit-course?courseId=${selectedCourseId}`);
+        } else {
+            alert("Please select a course to edit.");
+        }
     };
 
     const handleAddFace = () => {
@@ -111,7 +115,7 @@ const TestActionsPage: React.FC = () => {
 
             <Card className="w-full max-w-md p-6">
                 <CardHeader>
-                    <CardTitle className="text-lg font-semibold">Select Course for Face Recognition</CardTitle>
+                    <CardTitle className="text-lg font-semibold">Select Course for Actions</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <Input
@@ -143,16 +147,27 @@ const TestActionsPage: React.FC = () => {
                             <p className="p-2 text-sm text-gray-500 italic">No courses found.</p>
                         )}
                     </div>
-                    <Button onClick={handleGoToFaceRecognition} disabled={!selectedCourseId || loadingStudents}>
-                        {loadingStudents ? "Loading Students..." : "Go to Face Recognition"}
-                    </Button>
+                    <div className="flex space-x-2">
+                        <Button
+                            onClick={handleGoToFaceRecognition}
+                            disabled={!selectedCourseId || loadingStudents}
+                        >
+                            {loadingStudents ? "Loading Students..." : "Go to Face Recognition"}
+                        </Button>
+                        <Button
+                            onClick={handleEditCourse}
+                            disabled={!selectedCourseId}
+                            className={!selectedCourseId ? "bg-gray-400 cursor-not-allowed text-gray-200" : ""}
+                        >
+                            Edit Course
+                        </Button>
+                    </div>
                     {errorStudents && <p className="text-sm text-red-500 mt-2">{errorStudents}</p>}
                 </CardContent>
             </Card>
 
             <div className="space-x-4">
                 <Button onClick={handleCreateCourse}>Create Course</Button>
-                <Button onClick={handleEditCourse}>Edit Course</Button>
                 <Button onClick={handleAddFace}>Add Face</Button>
             </div>
         </div>

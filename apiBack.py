@@ -75,16 +75,10 @@ def recognize_faces_endpoint():
         rgb_img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         print(" Starting face recognition...", flush=True)
         
-        # Check if database exists and has faces
-        try:
-            with open("facesEncoding.csv", "r") as f:
-                content = f.read()
-                print(f" Database content preview: {content[:100]}...", flush=True)
-        except Exception as e:
-            print(f" Error reading database: {str(e)}", flush=True)
+
         
         #results = recognize_facesAPI(filename)
-        results = recognize_faces_deepface(filename)
+        results = recognize_faces_deepface_parralelisation(filename)
         print(f" Face recognition results: {results}", flush=True)
         
         # Convert dictionary to array

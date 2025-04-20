@@ -8,11 +8,11 @@ const Footer: React.FC<FooterProps> = () => {
   const companyName = 'EduTrack AI';
   const tagline = '- Automated Attendance and Security System';
   const description = 'Providing cutting-edge AI solutions for efficient attendance management and enhanced security.';
-  const myName = 'Your Name';
-  const colleagueName = 'Colleague\'s Name';
-  const phoneNumber = '+91 XXXXXXXXXX';
-  const email = 'contact@edutrackai.com';
-  const logoSrc = '/images/edutrack-ai-logo.png'; // Path to your logo (place it in the public/images folder)
+  const myName = 'Mayet Lilian';
+  const colleagueName = 'Godet Remi';
+  const phoneNumber = '+91 9035107836';
+  const email = 'mayetlilian@gmail.com';
+  const logoSrc = '/images/logo.png';
 
   return (
     <footer

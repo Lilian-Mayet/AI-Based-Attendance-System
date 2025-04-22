@@ -123,7 +123,7 @@ const EditCoursePage: React.FC = () => {
                     remove: studentsToRemove,
                 });
                 toast.success("Course updated successfully!");
-                router.push("/dashboard");
+                router.back();
             } else {
                 setError("Course ID is missing, cannot save.");
                 toast.error("Course ID is missing, cannot save.");
@@ -137,7 +137,7 @@ const EditCoursePage: React.FC = () => {
     };
 
     const handleCancel = () => {
-        router.push("/dashboard");
+        router.back();
     };
 
     if (loading) {

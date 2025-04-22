@@ -160,8 +160,8 @@ const EditCoursePage: React.FC = () => {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 py-6">
-            <div className="max-w-3xl mx-auto bg-white shadow-md rounded-md p-6">
+        <div className="min-h-screen bg-gray-50 py-6 pb-32">
+            <div className="max-w-3xl mx-auto bg-white shadow-md rounded-md p-6 mb-20">
                 <Card>
                     <CardHeader>
                         <CardTitle className="text-xl font-semibold">Edit Course: {course.subject}</CardTitle>
@@ -230,7 +230,7 @@ const EditCoursePage: React.FC = () => {
                             )}
                         </div>
 
-                        <div className="flex justify-end gap-2">
+                        <div className="flex justify-end gap-2 pt-4">
                             <Button variant="secondary" onClick={handleCancel}>
                                 Cancel
                             </Button>

@@ -1,7 +1,7 @@
 // app/layout.tsx
 import React, { ReactNode } from 'react';
-import Footer from '../components/Footer'; // Use the SAME correct import path
-import './globals.css'; // If you have global styles
+import Footer from '../components/Footer'; 
+import './globals.css'; 
 
 interface RootLayoutProps {
   children: ReactNode;

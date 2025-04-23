@@ -397,7 +397,7 @@ def recognize_faces_deepface_parralelisation(
     model_name: str = MODEL,
     detector_backend: str = "retinaface",
     distance_metric: str = "cosine",
-    threshold: float = 0.70
+    threshold: float = 0.60
 ) -> Dict[str, Any]:
     """
     Recognize faces in an image using DeepFace, fetching known faces and names from the database.

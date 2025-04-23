@@ -11,7 +11,7 @@ const Footer: React.FC<FooterProps> = () => {
   const myName = 'Mayet Lilian';
   const colleagueName = 'Godet Remi';
   const phoneNumber = '+91 9035107836';
-  const email = 'mayetlilian@gmail.com';
+  const email = 'lilian@presidencyuniversity.in';
   const logoSrc = '/images/logo.png';
 
   return (

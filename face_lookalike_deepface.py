@@ -2,7 +2,7 @@ from deepface import DeepFace
 import os
 import pandas as pd
 import numpy as np
-import cv2
+
 import psycopg2
 from typing import Dict, Any, Tuple, List
 import logging

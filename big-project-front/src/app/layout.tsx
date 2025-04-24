@@ -10,7 +10,7 @@ interface RootLayoutProps {
 export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="en">
-      <body className="bg-gray-100"> {/* Example body styling */}
+      <body className="bg-gray-100"> 
       
         <main>{children}</main>
         <Footer />
